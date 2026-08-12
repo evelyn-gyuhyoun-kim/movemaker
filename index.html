@@ -775,7 +775,7 @@
   // <img> layers crossfade between consecutive frames so the spin reads as
   // continuous motion instead of a hard cut between photos.
   const FRAME_COUNT = 8;
-  const FRAME_MS = 320; // how long each frame holds before crossfading to the next
+  const FRAME_MS = 400; // how long each frame holds before crossfading to the next
   const framePaths = Array.from({ length: FRAME_COUNT }, (_, i) => `player-${i + 1}.webp`);
 
   // Preload every frame so a crossfade never reveals an unloaded image.
