@@ -713,7 +713,7 @@
 
   function updatePlayerSummary() {
     const nameRaw = document.getElementById('playerName').value.trim();
-    const name = nameRaw || 'This player';
+    const name = nameRaw || 'The player';
     const club = getClubDisplay();
     const position = document.getElementById('position').value || 'player';
     document.getElementById('playerSummary').innerHTML =
