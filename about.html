@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MOVE MAKER — Transfer Risk Assessment</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root { --font-display: 'Poppins', 'Arial Black', 'Helvetica Neue', sans-serif; --font-body: 'Poppins', 'Helvetica Neue', Arial, sans-serif; }
+
+  :root{
+    --bg: #05080a;
+    --bg-grid: #0a120e;
+    --panel: #0c1512;
+    --panel-border: #1c3226;
+    --green: #56f623;
+    --green-dim: #2f8713;
+    --green-soft: rgba(86,246,35,0.12);
+    --text: #e9fbef;
+    --text-mute: #7fa88c;
+    --amber: #ffb347;
+    --red: #ff5c5c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    cursor: url('soccer-cursor.png') 16 16, auto;
+  }
+
+  body {
+    background-image:
+      linear-gradient(rgba(86,246,35,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(86,246,35,0.035) 1px, transparent 1px);
+    background-size: 34px 34px;
+    padding: 14px 20px 16px;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 14px; }
+
+  .title {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 42px;
+    letter-spacing: 2px;
+    color: var(--green);
+    text-shadow: 0 0 2px var(--green), 0 0 9px rgba(86,246,35,0.32), 0 0 18px rgba(86,246,35,0.16);
+    margin: 0;
+  }
+
+  .subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--text-mute);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--green);
+    text-transform: uppercase;
+    margin: 0 0 8px 2px;
+    opacity: 0.85;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 300px 300px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  @media (max-width: 980px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .field-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    display: block;
+    margin: 10px 0 5px;
+  }
+  .field-label:first-child { margin-top: 0; }
+
+  .field-input {
+    width: 100%;
+    height: 40px;
+    background: #081410;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    padding: 0 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .field-input[type="text"] { cursor: text; }
+
+  select.field-input {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356f623' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 34px;
+  }
+
+  .field-input:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-soft);
+  }
+
+  .other-club-wrap { display: none; }
+  .other-club-wrap.show { display: block; }
+
+  /* ---------- Player render (borderless, crossfading turntable) ---------- */
+  .holo-pose {
+    position: relative;
+    height: 320px;
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .holo-img {
+    position: absolute;
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 2px var(--green)) drop-shadow(0 0 8px rgba(86,246,35,0.3));
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+  }
+  .holo-img.active { opacity: 1; }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.75; }
+    94% { opacity: 1; }
+    97% { opacity: 0.85; }
+    98% { opacity: 1; }
+  }
+
+  .pose-path {
+    fill: none;
+    stroke: var(--green);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: d 0.4s ease;
+  }
+
+  .pose-fade { transition: opacity 0.35s ease; }
+
+  /* ---------- Results panel ---------- */
+  .results-panel { min-height: 100%; }
+
+  .player-summary {
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    line-height: 1.45;
+    color: var(--text-mute);
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .player-summary strong {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  .gauge-block { margin-bottom: 14px; }
+  .gauge-block:last-child { margin-bottom: 0; }
+
+  .gauge-title {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 15.5px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .gauge-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .gauge-row { display: flex; align-items: center; gap: 18px; }
+
+  .gauge-value {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 44px;
+    letter-spacing: 1px;
+    min-width: 92px;
+  }
+  .gauge-value span { font-size: 18px; color: var(--text-mute); }
+
+  .run-btn {
+    width: 100%;
+    margin-top: 12px;
+    height: 46px;
+    background: var(--green);
+    color: #04140b;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.1s;
+    box-shadow: 0 0 9px rgba(86,246,35,0.24);
+  }
+  .run-btn:hover { box-shadow: 0 0 14px rgba(86,246,35,0.35); }
+  .run-btn:active { transform: scale(0.99); }
+
+  .model-status {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); flex: none; }
+  .dot.live { background: var(--green); box-shadow: 0 0 4px rgba(86,246,35,0.6); }
+
+  /* ---------- Model connect ---------- */
+  .connect-panel { margin-top: 12px; }
+  .connect-toggle {
+    background: none;
+    border: 1px dashed var(--panel-border);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .connect-toggle:hover { border-color: var(--green-dim); color: var(--text); }
+
+  .connect-body { display: none; margin-top: 10px; }
+  .connect-body.open { display: block; }
+
+  .connect-body p {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-mute);
+    line-height: 1.6;
+    margin: 0 0 10px;
+  }
+  .connect-body code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #081410;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--green);
+    font-size: 11px;
+  }
+
+  textarea.field-input {
+    height: 120px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    resize: vertical;
+    cursor: text;
+  }
+
+  .connect-apply-row { display: flex; gap: 8px; margin-top: 8px; }
+  .connect-apply-row button {
+    flex: 1;
+    height: 36px;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--panel-border);
+    background: transparent;
+    color: var(--text);
+  }
+  .connect-apply-row button.primary {
+    background: var(--green-soft);
+    border-color: var(--green-dim);
+    color: var(--green);
+  }
+  .connect-note { font-size: 10.5px; margin-top: 8px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- Top navigation bar ---------- */
+  .site-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 26px;
+    margin: 14px 0 20px;
+    padding: 12px 0;
+    border-top: 1px solid var(--panel-border);
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .site-nav a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    text-decoration: none;
+    padding: 4px 2px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .site-nav a:hover { color: var(--text); }
+  .site-nav a.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  /* ---------- Simple content page (about/how-it-works/etc.) ---------- */
+  .page-content {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 8px 4px 40px;
+    font-family: var(--font-body);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .page-content h2 {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 22px;
+    color: var(--green);
+    text-shadow: 0 0 2px var(--green), 0 0 8px rgba(86,246,35,0.24);
+    margin: 28px 0 10px;
+  }
+  .page-content h2:first-child { margin-top: 0; }
+  .page-content p { font-size: 14.5px; color: var(--text-mute); margin: 0 0 12px; }
+  .page-content ul { margin: 0 0 14px; padding-left: 20px; }
+  .page-content li { font-size: 14.5px; color: var(--text-mute); margin-bottom: 6px; }
+  .page-content strong { color: var(--text); }
+  .page-content a.inline-link { color: var(--green); }
+  .member-list { list-style: none; padding: 0; margin: 0 0 14px; }
+  .member-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--panel-border);
+    font-size: 14.5px;
+  }
+  .member-list li:last-child { border-bottom: none; }
+  .member-list .member-name { color: var(--text); font-weight: 600; }
+  .member-list .member-role { color: var(--text-mute); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .roadmap-item { display: flex; gap: 10px; margin-bottom: 10px; font-size: 14.5px; }
+  .roadmap-status {
+    flex: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    height: fit-content;
+  }
+  .roadmap-status.done { color: #04140b; background: var(--green); }
+  .roadmap-status.progress { color: var(--amber); border: 1px solid var(--amber); }
+  .roadmap-status.next { color: var(--text-mute); border: 1px solid var(--panel-border); }
+  .contact-box {
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 18px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="title">MOVE MAKER</h1>
+    <div class="subtitle">Meet The Team</div>
+  </header>
+
+  <nav class="site-nav">
+    <a href="about.html" class="active">About</a>
+    <a href="index.html">Tool</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="scope.html">Scope &amp; Limitations</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+
+  <div class="page-content">
+
+    <h2>About Move Maker</h2>
+    <p>Move Maker is a football transfer risk assessment tool built as a data analytics capstone project. It helps evaluate the risk of a proposed contract for a player at their current club, using historical transfer and performance data.</p>
+
+    <h2>The Team</h2>
+    <ul class="member-list">
+      <li><span class="member-name">Lionel</span><span class="member-role">Team Lead</span></li>
+      <li><span class="member-name">Evelyn</span><span class="member-role">Team member</span></li>
+      <li><span class="member-name">Derick</span><span class="member-role">Team member</span></li>
+      <li><span class="member-name">Rene</span><span class="member-role">Team member</span></li>
+    </ul>
+    <p><em>Roles above are placeholders — swap in each person's actual focus area (data engineering, modeling, frontend, etc.) whenever you get a minute.</em></p>
+
+  </div>
+</div>
+</body>
+</html>
