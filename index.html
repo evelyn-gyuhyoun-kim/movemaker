@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MOVE MAKER — Transfer Risk Assessment</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root { --font-display: 'Anton', 'Arial Black', 'Helvetica Neue', sans-serif; --font-body: 'Oswald', 'Helvetica Neue', Arial, sans-serif; }
+
+  :root{
+    --bg: #05080a;
+    --bg-grid: #0a120e;
+    --panel: #0c1512;
+    --panel-border: #1c3226;
+    --green: #56f623;
+    --green-dim: #2f8713;
+    --green-soft: rgba(86,246,35,0.12);
+    --text: #ffffff;
+    --text-mute: #c9d6ce;
+    --amber: #ffb347;
+    --red: #ff5c5c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+
+  body {
+    background-image:
+      linear-gradient(rgba(5,8,10,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(5,8,10,0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(2,26,2,0.95) 0%, transparent 14%, transparent 86%, rgba(2,26,2,0.95) 100%),
+      linear-gradient(rgba(4,7,6,0.82), rgba(4,7,6,0.86)),
+      url('pitch-bg.jpg');
+    background-size: 34px 34px, 34px 34px, 100% 100%, cover, cover;
+    background-position: 0 0, 0 0, center, center, center;
+    background-attachment: scroll, scroll, fixed, fixed, fixed;
+    background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+    padding: 14px 20px 16px;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 14px; }
+
+  .title {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 42px;
+    letter-spacing: 2px;
+    color: var(--green);
+    text-shadow: 0 0 2px var(--green), 0 0 9px rgba(86,246,35,0.32), 0 0 18px rgba(86,246,35,0.16);
+    margin: 0;
+  }
+
+  .subtitle {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: var(--text);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    color: var(--green);
+    text-transform: uppercase;
+    margin: 0 0 8px 2px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 300px 300px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  @media (max-width: 980px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .field-label {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text);
+    display: block;
+    margin: 10px 0 5px;
+  }
+  .field-label:first-child { margin-top: 0; }
+
+  .field-input {
+    width: 100%;
+    height: 40px;
+    background: #081410;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    padding: 0 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .field-input[type="text"] { cursor: text; }
+
+  select.field-input {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356f623' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 34px;
+  }
+
+  .field-input:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-soft);
+  }
+
+  .other-club-wrap { display: none; }
+  .other-club-wrap.show { display: block; }
+
+  /* ---------- Player search ---------- */
+  .search-wrap { position: relative; }
+  .search-results {
+    display: none;
+    position: relative;
+    margin-top: 4px;
+    background: #081410;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 20;
+  }
+  .search-results.show { display: block; }
+  .search-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--panel-border);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: var(--green-soft); }
+  .search-result-item.search-empty, .search-result-item.search-error {
+    cursor: default; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+  }
+  .search-result-item.search-error { color: var(--red); }
+  .sr-name { font-weight: 600; font-size: 14px; }
+  .sr-meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-mute); }
+
+  .locked-info {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #081410;
+    border: 1px dashed var(--panel-border);
+    border-radius: 6px;
+  }
+  .locked-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .locked-label {
+    font-family: var(--font-body); font-weight: 600; font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-mute);
+  }
+  .locked-value { font-size: 14px; font-weight: 700; color: var(--text); }
+
+  .scope-note {
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    line-height: 1.5;
+    color: var(--text-mute);
+  }
+
+  .warning-banner {
+    display: none;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    background: rgba(255,179,71,0.1);
+    border: 1px solid var(--amber);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--amber);
+  }
+
+  .metric-rows { margin: 16px 0; border-top: 1px solid var(--panel-border); padding-top: 10px; }
+  .metric-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 6px 0;
+    font-family: var(--font-body);
+  }
+  .mr-label { font-size: 13px; font-weight: 500; color: var(--text-mute); }
+  .mr-value { font-size: 14px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+
+  .run-btn:disabled {
+    background: var(--panel-border);
+    color: var(--text-mute);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* ---------- Player render (borderless, crossfading turntable) ---------- */
+  .holo-pose {
+    position: relative;
+    height: 320px;
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .holo-img {
+    position: absolute;
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 2px var(--green)) drop-shadow(0 0 8px rgba(86,246,35,0.3));
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+  }
+  .holo-img.active { opacity: 1; }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.75; }
+    94% { opacity: 1; }
+    97% { opacity: 0.85; }
+    98% { opacity: 1; }
+  }
+
+  .pose-path {
+    fill: none;
+    stroke: var(--green);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: d 0.4s ease;
+  }
+
+  .pose-fade { transition: opacity 0.35s ease; }
+
+  /* ---------- Results panel ---------- */
+  .results-panel { min-height: 100%; }
+
+  .player-summary {
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    line-height: 1.45;
+    color: var(--text-mute);
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .player-summary strong {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  .gauge-block { margin-bottom: 14px; }
+  .gauge-block:last-child { margin-bottom: 0; }
+
+  .gauge-title {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 16.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .gauge-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .gauge-row { display: flex; align-items: center; gap: 18px; }
+
+  .gauge-value {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 44px;
+    letter-spacing: 1px;
+    min-width: 92px;
+  }
+  .gauge-value span { font-size: 18px; color: var(--text-mute); }
+
+  .run-btn {
+    width: 100%;
+    margin-top: 12px;
+    height: 46px;
+    background: var(--green);
+    color: #04140b;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.1s;
+    box-shadow: 0 0 9px rgba(86,246,35,0.24);
+  }
+  .run-btn:hover { box-shadow: 0 0 14px rgba(86,246,35,0.35); }
+  .run-btn:active { transform: scale(0.99); }
+
+  .model-status {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-mute);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); flex: none; }
+  .dot.live { background: var(--green); box-shadow: 0 0 4px rgba(86,246,35,0.6); }
+
+  /* ---------- Model connect ---------- */
+  .connect-panel { margin-top: 12px; }
+  .connect-toggle {
+    background: none;
+    border: 1px dashed var(--panel-border);
+    color: var(--text-mute);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .connect-toggle:hover { border-color: var(--green-dim); color: var(--text); }
+
+  .connect-body { display: none; margin-top: 10px; }
+  .connect-body.open { display: block; }
+
+  .connect-body p {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-mute);
+    line-height: 1.6;
+    margin: 0 0 10px;
+  }
+  .connect-body code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #081410;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--green);
+    font-size: 11px;
+  }
+
+  textarea.field-input {
+    height: 120px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    resize: vertical;
+    cursor: text;
+  }
+
+  .connect-apply-row { display: flex; gap: 8px; margin-top: 8px; }
+  .connect-apply-row button {
+    flex: 1;
+    height: 36px;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--panel-border);
+    background: transparent;
+    color: var(--text);
+  }
+  .connect-apply-row button.primary {
+    background: var(--green-soft);
+    border-color: var(--green-dim);
+    color: var(--green);
+  }
+  .connect-note { font-size: 10.5px; margin-top: 8px; color: var(--text-mute); font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- Top navigation bar ---------- */
+  .site-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 26px;
+    margin: 14px 0 20px;
+    padding: 12px 0;
+    border-top: 1px solid var(--panel-border);
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .site-nav a {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text);
+    text-decoration: none;
+    padding: 4px 2px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .site-nav a:hover { color: var(--green); }
+  .site-nav a.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  /* ---------- Simple content page (about/how-it-works/etc.) ---------- */
+  .page-content {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 8px 4px 40px;
+    font-family: var(--font-body);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .page-content h2 {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 22px;
+    color: var(--green);
+    text-shadow: 0 0 2px var(--green), 0 0 8px rgba(86,246,35,0.24);
+    margin: 28px 0 10px;
+  }
+  .page-content h2:first-child { margin-top: 0; }
+  .page-content p { font-size: 14.5px; color: var(--text-mute); margin: 0 0 12px; }
+  .page-content ul { margin: 0 0 14px; padding-left: 20px; }
+  .page-content li { font-size: 14.5px; color: var(--text-mute); margin-bottom: 6px; }
+  .page-content strong { color: var(--text); }
+  .page-content a.inline-link { color: var(--green); }
+  .member-list { list-style: none; padding: 0; margin: 0 0 14px; }
+  .member-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--panel-border);
+    font-size: 14.5px;
+  }
+  .member-list li:last-child { border-bottom: none; }
+  .member-list .member-name { color: var(--text); font-weight: 600; }
+  .member-list .member-role { color: var(--text-mute); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .roadmap-item { display: flex; gap: 10px; margin-bottom: 10px; font-size: 14.5px; }
+  .roadmap-status {
+    flex: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    height: fit-content;
+  }
+  .roadmap-status.done { color: #04140b; background: var(--green); }
+  .roadmap-status.progress { color: var(--amber); border: 1px solid var(--amber); }
+  .roadmap-status.next { color: var(--text-mute); border: 1px solid var(--panel-border); }
+  .contact-box {
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 18px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="title">MOVE MAKER</h1>
+    <div class="subtitle">Transfer Risk Assessment</div>
+  </header>
+
+  <nav class="site-nav">
+    <a href="about.html">About</a>
+    <a href="index.html" class="active">Tool</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="scope.html">Scope &amp; Limitations</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+
+  <div class="grid">
+
+    <!-- COLUMN 1: identity -->
+    <div class="panel">
+      <div class="eyebrow">Player</div>
+
+      <label class="field-label" for="playerSearch">Search Player</label>
+      <div class="search-wrap">
+        <input class="field-input" type="text" id="playerSearch" placeholder="e.g. Jude Bellingham" autocomplete="off" />
+        <div class="search-results" id="searchResults"></div>
+      </div>
+
+      <div class="locked-info" id="lockedInfo" style="display:none;">
+        <div class="locked-row"><span class="locked-label">Current Club</span><span class="locked-value" id="lockedClub">—</span></div>
+        <div class="locked-row"><span class="locked-label">League</span><span class="locked-value" id="lockedLeague">—</span></div>
+        <div class="locked-row"><span class="locked-label">Position</span><span class="locked-value" id="lockedPosition">—</span></div>
+        <div class="locked-row"><span class="locked-label">Age</span><span class="locked-value" id="lockedAge">—</span></div>
+      </div>
+
+      <div class="scope-note">
+        This tool only evaluates a player at their own current club. Club and league are resolved automatically from the
+        search result, not chosen — MoveMaker's models are not validated for a player joining a new club.
+      </div>
+
+      <div class="holo-pose" id="holoPose">
+        <img id="holoA" src="player-1.webp" alt="Player render" class="holo-img active" />
+        <img id="holoB" src="player-2.webp" alt="Player render" class="holo-img" />
+      </div>
+    </div>
+
+    <!-- COLUMN 2: contract factors -->
+    <div class="panel">
+      <div class="eyebrow">Contract Factors</div>
+
+      <label class="field-label" for="marketValue">Current Market Value (EUR)</label>
+      <input class="field-input" type="number" id="marketValue" placeholder="auto-filled after search" min="1" />
+
+      <label class="field-label" for="wage">Proposed Annual Wage (EUR)</label>
+      <input class="field-input" type="number" id="wage" placeholder="e.g. 8000000" min="1" />
+
+      <label class="field-label" for="contractLength">Proposed Contract Length (years)</label>
+      <input class="field-input" type="number" id="contractLength" min="0.5" max="10" step="0.5" value="3" />
+
+      <div class="connect-note" style="margin-top:10px;">
+        Market value auto-fills from our dated public valuation once a player is selected — edit it if your club has a
+        more current internal figure. Wage is scheduled fixed pay only; excludes bonuses, taxes, agent fees, clauses.
+      </div>
+    </div>
+
+    <!-- COLUMN 3: results -->
+    <div class="panel results-panel">
+      <div class="eyebrow">Risk Output</div>
+
+      <div class="player-summary" id="playerSummary">Search for a player to begin.</div>
+
+      <div class="warning-banner" id="warningBanner"></div>
+
+      <div class="gauge-block">
+        <div class="gauge-title">Value Downside Risk</div>
+        <div class="gauge-desc">Modeled probability the player's public market value falls at least 25% within 24 months.</div>
+        <div class="gauge-row">
+          <svg id="gaugeValue" width="120" height="70" viewBox="0 0 120 70"></svg>
+          <div class="gauge-value" id="gaugeValueNum">–<span>/100</span></div>
+        </div>
+      </div>
+
+      <div class="gauge-block">
+        <div class="gauge-title">Retention Score</div>
+        <div class="gauge-desc">Modeled probability the player remains continuously at the club through 24 months.</div>
+        <div class="gauge-row">
+          <svg id="gaugeRetention" width="120" height="70" viewBox="0 0 120 70"></svg>
+          <div class="gauge-value" id="gaugeRetentionNum">–<span>/100</span></div>
+        </div>
+      </div>
+
+      <div class="metric-rows" id="metricRows"></div>
+
+      <button class="run-btn" id="runBtn" disabled>Search a player first</button>
+      <div class="model-status">
+        <span class="dot" id="modelDot"></span>
+        <span id="modelStatusText">Not connected</span>
+      </div>
+
+      <div class="connect-panel">
+        <button class="connect-toggle" id="connectToggle">&gt; api settings</button>
+        <div class="connect-body" id="connectBody">
+          <label class="field-label" for="apiBase">API Base URL</label>
+          <input class="field-input" type="text" id="apiBase" value="http://192.168.1.151:8000" />
+          <div class="connect-note">Points at the live MoveMaker scoring API. Change this only if the API is deployed somewhere other than Lionel's machine.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ---------------- Silhouette poses ----------------
+  // NOTE: this pose-building code is no longer used (the player render is a
+  // fixed photo turntable now — see the bottom of this script) but is left
+  // in place in case the wireframe silhouette comes back during the design
+  // pass.
+  // Multi-point tapered limb: builds ONE continuous outline through a chain
+  // of joints (e.g. shoulder -> elbow -> hand) instead of stitching separate
+  // capsules together, so there's no circular seam artifact at each joint.
+  function norm(x, y) { const l = Math.hypot(x, y) || 1; return { x: x / l, y: y / l }; }
+  function dirAt(pts, i, n) {
+    if (i === 0) return norm(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+    if (i === n - 1) return norm(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    const d1 = norm(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    const d2 = norm(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y);
+    return norm(d1.x + d2.x, d1.y + d2.y);
+  }
+  function limbPath(pts) {
+    const n = pts.length, left = [], right = [];
+    for (let i = 0; i < n; i++) {
+      const d = dirAt(pts, i, n);
+      const px = -d.y, py = d.x;
+      left.push({ x: pts[i].x + px * pts[i].r, y: pts[i].y + py * pts[i].r });
+      right.push({ x: pts[i].x - px * pts[i].r, y: pts[i].y - py * pts[i].r });
+    }
+    let s = `M ${left[0].x.toFixed(1)} ${left[0].y.toFixed(1)} `;
+    for (let i = 1; i < n; i++) s += `L ${left[i].x.toFixed(1)} ${left[i].y.toFixed(1)} `;
+    const endR = pts[n - 1].r;
+    s += `A ${endR} ${endR} 0 0 1 ${right[n - 1].x.toFixed(1)} ${right[n - 1].y.toFixed(1)} `;
+    for (let i = n - 2; i >= 0; i--) s += `L ${right[i].x.toFixed(1)} ${right[i].y.toFixed(1)} `;
+    const startR = pts[0].r;
+    s += `A ${startR} ${startR} 0 0 1 ${left[0].x.toFixed(1)} ${left[0].y.toFixed(1)} Z`;
+    return s;
+  }
+  function limbShape(d) {
+    return `<path d="${d}" fill="url(#bodyGlow)" stroke="#baffdd" stroke-width="0.9" opacity="0.95"/>`;
+  }
+
+  const TORSO = `
+    <path d="M58 44 C52 54,53 66,55 78 C57 90,60 96,65 102 C62 110,60 118,64 124
+      C67 129,73 131,80 131 C87 131,93 129,96 124 C100 118,98 110,95 102
+      C100 96,103 90,105 78 C107 66,108 54,102 44 C97 42,92 40,88 40 L72 40
+      C68 40,63 42,58 44 Z"
+      fill="url(#bodyGlow)" stroke="#baffdd" stroke-width="1" opacity="0.95"/>
+    <path d="M80 18 C88 18 93 25 93 34 C93 42 89 48 80 49 C71 48 67 42 67 34 C67 25 72 18 80 18 Z"
+      fill="url(#bodyGlow)" stroke="#baffdd" stroke-width="0.9" opacity="0.95"/>
+  `;
+
+  const FLOOR_GLOW = `<ellipse cx="80" cy="248" rx="34" ry="7" fill="#56f623" opacity="0.25"/>
+    <ellipse cx="80" cy="248" rx="52" ry="11" fill="#56f623" opacity="0.1"/>`;
+
+  // Legs are drawn first (so the rounded pelvis in TORSO overlaps their
+  // tops cleanly), then torso, then arms on top.
+  function bodySvg(legs, arms) {
+    return `<svg viewBox="0 0 160 260" width="180" height="260">${FLOOR_GLOW}${legs}${TORSO}${arms}</svg>`;
+  }
+
+  // Default standing pose — a plain, healthy stance used for every outfield
+  // position. Goalkeeper switches to an active blocking stance.
+  const STAND_POSE = bodySvg(`
+    ${limbShape(limbPath([{x:74,y:124,r:9},{x:71,y:180,r:7},{x:68,y:238,r:5}]))}
+    ${limbShape(limbPath([{x:86,y:124,r:9},{x:89,y:180,r:7},{x:92,y:238,r:5}]))}
+  `, `
+    ${limbShape(limbPath([{x:60,y:50,r:8},{x:48,y:92,r:6},{x:42,y:132,r:4}]))}
+    ${limbShape(limbPath([{x:100,y:50,r:8},{x:112,y:92,r:6},{x:118,y:132,r:4}]))}
+  `);
+
+  const RUN_POSE = bodySvg(`
+    ${limbShape(limbPath([{x:74,y:124,r:9},{x:56,y:160,r:7},{x:64,y:194,r:4.5}]))}
+    ${limbShape(limbPath([{x:86,y:124,r:9},{x:96,y:186,r:7},{x:108,y:220,r:4.5}]))}
+  `, `
+    ${limbShape(limbPath([{x:58,y:48,r:8},{x:36,y:64,r:6},{x:28,y:44,r:4}]))}
+    ${limbShape(limbPath([{x:102,y:48,r:8},{x:116,y:78,r:6},{x:108,y:102,r:4}]))}
+  `);
+
+  const GK_POSE = bodySvg(`
+    ${limbShape(limbPath([{x:72,y:124,r:9},{x:50,y:172,r:7.5},{x:44,y:212,r:5}]))}
+    ${limbShape(limbPath([{x:88,y:124,r:9},{x:110,y:172,r:7.5},{x:116,y:212,r:5}]))}
+  `, `
+    ${limbShape(limbPath([{x:56,y:48,r:8},{x:30,y:38,r:6},{x:6,y:22,r:4}]))}
+    ${limbShape(limbPath([{x:104,y:48,r:8},{x:130,y:38,r:6},{x:154,y:22,r:4}]))}
+  `);
+
+  // NOTE: the holo frame now shows a fixed player photo (see the <img>
+  // markup above), so the position select no longer swaps in a generated
+  // SVG pose. The pose-building functions above are left in place in case
+  // you want to switch back to the wireframe silhouette later.
+
+  // ---------------- Gauge rendering ----------------
+  function polar(cx, cy, r, angleDeg) {
+    const a = (angleDeg - 180) * Math.PI / 180;
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  }
+  function arcPath(cx, cy, r, startAngle, endAngle) {
+    const s = polar(cx, cy, r, startAngle);
+    const e = polar(cx, cy, r, endAngle);
+    const large = endAngle - startAngle > 180 ? 1 : 0;
+    return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
+  }
+  function drawGauge(svgId, value, colorFn) {
+    const svg = document.getElementById(svgId);
+    const cx = 60, cy = 62, r = 50;
+    const track = arcPath(cx, cy, r, 0, 180);
+    const fillEnd = (value / 100) * 180;
+    const fillArc = value > 0 ? arcPath(cx, cy, r, 0, fillEnd) : "";
+    svg.innerHTML = `
+      <path d="${track}" stroke="#173327" stroke-width="10" fill="none" stroke-linecap="round"/>
+      ${fillArc ? `<path d="${fillArc}" stroke="${colorFn(value)}" stroke-width="10" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 4px ${colorFn(value)})"/>` : ""}
+    `;
+  }
+  function riskColor(v) {
+    if (v < 33) return "#56f623";
+    if (v < 66) return "#ffb347";
+    return "#ff5c5c";
+  }
+  function retentionColor(v) {
+    if (v > 66) return "#56f623";
+    if (v > 33) return "#ffb347";
+    return "#ff5c5c";
+  }
+  drawGauge('gaugeValue', 0, riskColor);
+  drawGauge('gaugeRetention', 0, retentionColor);
+
+  // ---------------- API config ----------------
+  const apiBaseInput = document.getElementById('apiBase');
+  function apiBase() { return apiBaseInput.value.trim().replace(/\/$/, ''); }
+
+  // ---------------- Small helpers ----------------
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+  function findMetric(cards, cardName, metricKey) {
+    const card = (cards && cards[cardName]) || [];
+    return card.find(m => m.metric_key === metricKey) || null;
+  }
+  function fmtEur(n) {
+    if (n === null || n === undefined || Number.isNaN(n)) return '—';
+    const sign = n < 0 ? '-' : '';
+    return sign + '€' + Math.round(Math.abs(n)).toLocaleString('en-US');
+  }
+  function fmtPct(p) {
+    if (p === null || p === undefined || Number.isNaN(p)) return '—';
+    return (p * 100).toFixed(1) + '%';
+  }
+  function metricRow(label, value) {
+    return `<div class="metric-row"><span class="mr-label">${escapeHtml(label)}</span><span class="mr-value">${escapeHtml(value)}</span></div>`;
+  }
+  function ageFromDob(dob) {
+    const diffMs = Date.now() - new Date(dob).getTime();
+    return Math.floor(diffMs / (365.25 * 24 * 3600 * 1000));
+  }
+
+  // ---------------- Player search ----------------
+  const searchInput = document.getElementById('playerSearch');
+  const searchResultsEl = document.getElementById('searchResults');
+  const lockedInfo = document.getElementById('lockedInfo');
+  const runBtn = document.getElementById('runBtn');
+  let selectedPlayer = null;
+  let searchDebounce = null;
+
+  searchInput.addEventListener('input', () => {
+    selectedPlayer = null;
+    lockedInfo.style.display = 'none';
+    updateRunButtonState();
+    updatePlayerSummary();
+    const q = searchInput.value.trim();
+    clearTimeout(searchDebounce);
+    if (q.length < 2) { searchResultsEl.innerHTML = ''; searchResultsEl.classList.remove('show'); return; }
+    searchDebounce = setTimeout(() => runSearch(q), 250);
+  });
+
+  async function runSearch(q) {
+    try {
+      const res = await fetch(`${apiBase()}/players/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error('search request failed');
+      renderSearchResults(await res.json());
+    } catch (e) {
+      searchResultsEl.innerHTML = `<div class="search-result-item search-error">Could not reach the API at ${escapeHtml(apiBase())} — is it running? (see &gt; api settings below)</div>`;
+      searchResultsEl.classList.add('show');
+    }
+  }
+
+  function renderSearchResults(players) {
+    if (!players.length) {
+      searchResultsEl.innerHTML = `<div class="search-result-item search-empty">No matches.</div>`;
+      searchResultsEl.classList.add('show');
+      return;
+    }
+    searchResultsEl.innerHTML = players.map((p, i) => `
+      <div class="search-result-item" data-idx="${i}">
+        <span class="sr-name">${escapeHtml(p.display_name)}</span>
+        <span class="sr-meta">${escapeHtml(p.current_club_name || 'no current club on record')}${p.competition_id ? ' · ' + escapeHtml(p.competition_id) : ''}</span>
+      </div>
+    `).join('');
+    searchResultsEl.classList.add('show');
+    Array.from(searchResultsEl.querySelectorAll('.search-result-item[data-idx]')).forEach(el => {
+      el.addEventListener('click', () => selectPlayer(players[Number(el.dataset.idx)]));
+    });
+  }
+
+  function selectPlayer(p) {
+    selectedPlayer = p;
+    searchInput.value = p.display_name;
+    searchResultsEl.classList.remove('show');
+    document.getElementById('lockedClub').textContent = p.current_club_name || 'unresolved — will be refused';
+    document.getElementById('lockedLeague').textContent = p.competition_id || '—';
+    document.getElementById('lockedPosition').textContent = p.position || '—';
+    document.getElementById('lockedAge').textContent = p.date_of_birth ? ageFromDob(p.date_of_birth) : '—';
+    lockedInfo.style.display = 'block';
+    updatePlayerSummary();
+    updateRunButtonState();
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#searchResults') && e.target !== searchInput) {
+      searchResultsEl.classList.remove('show');
+    }
+  });
+
+  function updatePlayerSummary() {
+    if (!selectedPlayer) {
+      document.getElementById('playerSummary').textContent = 'Search for a player to begin.';
+      return;
+    }
+    document.getElementById('playerSummary').innerHTML =
+      `<strong>${escapeHtml(selectedPlayer.display_name)}</strong> at <strong>${escapeHtml(selectedPlayer.current_club_name || 'unresolved club')}</strong>` +
+      (selectedPlayer.position ? ` — ${escapeHtml(selectedPlayer.position)}` : '');
+  }
+
+  function updateRunButtonState() {
+    runBtn.disabled = !selectedPlayer;
+    runBtn.textContent = selectedPlayer ? 'Run Assessment' : 'Search a player first';
+  }
+  updateRunButtonState();
+
+  // ---------------- Run assessment ----------------
+  const statusText = document.getElementById('modelStatusText');
+  const dot = document.getElementById('modelDot');
+  const warningBanner = document.getElementById('warningBanner');
+  const metricRowsEl = document.getElementById('metricRows');
+
+  async function runAssessment() {
+    if (!selectedPlayer) return;
+    statusText.textContent = 'Scoring…';
+    dot.classList.remove('live');
+    warningBanner.style.display = 'none';
+    metricRowsEl.innerHTML = '';
+
+    const wage = Number(document.getElementById('wage').value);
+    const years = Number(document.getElementById('contractLength').value);
+    const marketValueRaw = document.getElementById('marketValue').value;
+    const marketValue = marketValueRaw ? Number(marketValueRaw) : null;
+
+    if (!wage || wage <= 0) { statusText.textContent = 'Enter a proposed annual wage first.'; return; }
+    if (!years || years <= 0) { statusText.textContent = 'Enter a proposed contract length first.'; return; }
+
+    const body = {
+      canonical_player_id: selectedPlayer.canonical_player_id,
+      canonical_club_id: selectedPlayer.current_club_id,
+      competition_id: selectedPlayer.competition_id,
+      player_display_name: selectedPlayer.display_name,
+      player_name_normalized: selectedPlayer.player_name_normalized,
+      current_club_display_name: selectedPlayer.current_club_name,
+      proposed_annual_fixed_wage_eur: wage,
+      proposed_contract_years: years,
+    };
+    if (marketValue) body.current_public_market_value_eur = marketValue;
+
+    try {
+      const res = await fetch(`${apiBase()}/profile`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        throw new Error(detail.detail || `HTTP ${res.status}`);
+      }
+      renderProfile(await res.json());
+    } catch (e) {
+      statusText.textContent = `Error: ${e.message}`;
+      dot.classList.remove('live');
+    }
+  }
+
+  function renderProfile(profile) {
+    if (profile.status === 'refused') {
+      drawGauge('gaugeValue', 0, riskColor);
+      drawGauge('gaugeRetention', 0, retentionColor);
+      document.getElementById('gaugeValueNum').innerHTML = '–<span>/100</span>';
+      document.getElementById('gaugeRetentionNum').innerHTML = '–<span>/100</span>';
+      warningBanner.textContent = `Not scored: ${profile.refusal_reason}`;
+      warningBanner.style.display = 'block';
+      statusText.textContent = 'Out of scope for this profile';
+      dot.classList.remove('live');
+      return;
+    }
+
+    if (profile.resolved_inputs && profile.resolved_inputs.current_public_market_value_eur) {
+      document.getElementById('marketValue').value = Math.round(profile.resolved_inputs.current_public_market_value_eur);
+    }
+
+    const cards = profile.cards || {};
+    const downside = findMetric(cards, 'asset_value', 'public_value_downside_25pct_scenario');
+    const downsideProb = downside && downside.status !== 'unavailable' ? downside.value.probability : null;
+    const continuity = findMetric(cards, 'continuity', 'contract_continuity_horizon');
+    const stay24 = continuity && continuity.status !== 'unavailable' ? continuity.components.continuous_stay_probability_24m : null;
+    const stay36 = continuity && continuity.status !== 'unavailable' ? continuity.value.continuous_stay_probability_36m : null;
+    const contribution = findMetric(cards, 'contribution_exposure', 'low_contribution_wage_exposure_eur');
+    const contribProb = contribution && contribution.status !== 'unavailable' ? contribution.components.sustained_contribution_probability_24m : null;
+    const peerDiff = findMetric(cards, 'offer_context', 'fixed_commitment_peer_difference_eur');
+    const peerPercentile = findMetric(cards, 'offer_context', 'offer_aggressiveness_percentile');
+
+    const dv = downsideProb !== null ? Math.round(downsideProb * 100) : 0;
+    drawGauge('gaugeValue', dv, riskColor);
+    document.getElementById('gaugeValueNum').innerHTML = (downsideProb !== null ? dv : '–') + '<span>/100</span>';
+
+    const rv = stay24 !== null ? Math.round(stay24 * 100) : 0;
+    drawGauge('gaugeRetention', rv, retentionColor);
+    document.getElementById('gaugeRetentionNum').innerHTML = (stay24 !== null ? rv : '–') + '<span>/100</span>';
+
+    const rows = [];
+    rows.push(metricRow('Sustained Contributor Probability (24m)', contribProb !== null ? fmtPct(contribProb) : 'unavailable'));
+    rows.push(metricRow('Continuous Stay Probability (36m)', stay36 !== null ? fmtPct(stay36) : 'unavailable'));
+    rows.push(metricRow('Commitment vs. Historical Peers', peerDiff && peerDiff.status !== 'unavailable' ? fmtEur(peerDiff.value) : 'unavailable'));
+    rows.push(metricRow('Offer Aggressiveness Percentile', peerPercentile && peerPercentile.status !== 'unavailable' ? fmtPct(peerPercentile.value) : 'unavailable'));
+    metricRowsEl.innerHTML = rows.join('');
+
+    if (profile.data_density_warning) {
+      warningBanner.textContent = profile.data_density_warning;
+      warningBanner.style.display = 'block';
+    } else {
+      warningBanner.style.display = 'none';
+    }
+
+    statusText.textContent = `Live — model vintage ${profile.model_vintage || 'unknown'}`;
+    dot.classList.add('live');
+  }
+
+  runBtn.addEventListener('click', runAssessment);
+
+  // ---------------- API settings panel ----------------
+  const connectToggle = document.getElementById('connectToggle');
+  const connectBody = document.getElementById('connectBody');
+  connectToggle.addEventListener('click', () => connectBody.classList.toggle('open'));
+
+  // ---------------- Player render turntable (crossfade) ----------------
+  // 8 frames captured at 45-degree steps around the vertical axis
+  // (player-1.webp = front ... player-8.webp = front-left 3/4). Two stacked
+  // <img> layers crossfade between consecutive frames so the spin reads as
+  // continuous motion instead of a hard cut between photos.
+  const FRAME_COUNT = 8;
+  const FRAME_MS = 320; // how long each frame holds before crossfading to the next
+  const framePaths = Array.from({ length: FRAME_COUNT }, (_, i) => `player-${i + 1}.webp`);
+
+  // Preload every frame so a crossfade never reveals an unloaded image.
+  framePaths.forEach(src => { const img = new Image(); img.src = src; });
+
+  let frontLayer = document.getElementById('holoA');
+  let backLayer = document.getElementById('holoB');
+  let frameIndex = 0;
+  backLayer.src = framePaths[1 % FRAME_COUNT];
+
+  setInterval(() => {
+    frameIndex = (frameIndex + 1) % FRAME_COUNT;
+    backLayer.src = framePaths[frameIndex];
+    requestAnimationFrame(() => {
+      frontLayer.classList.remove('active');
+      backLayer.classList.add('active');
+      const tmp = frontLayer; frontLayer = backLayer; backLayer = tmp;
+    });
+  }, FRAME_MS);
+</script>
+</body>
+</html>
