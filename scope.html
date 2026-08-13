@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MOVE MAKER — Transfer Risk Assessment</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root { --font-display: 'Anton', 'Arial Black', 'Helvetica Neue', sans-serif; --font-body: 'Oswald', 'Helvetica Neue', Arial, sans-serif; }
+
+  :root{
+    --bg: #05080a;
+    --bg-grid: #0a120e;
+    --panel: #ffffff;
+    --panel-alt: #f2f8f4;
+    --panel-border: #dce9e0;
+    --green: #1f9d2e;
+    --green-dim: #157a20;
+    --green-soft: rgba(31,157,46,0.1);
+    --text: #12241a;
+    --text-mute: #55705f;
+    --amber: #b5760f;
+    --red: #c0413d;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    cursor: url('soccer-cursor.png') 16 16, auto;
+  }
+
+  /* Form controls and interactive elements ship their own default cursor
+     in every browser, which overrides the inherited body cursor above.
+     Force the same custom cursor on them explicitly. */
+  select, input, textarea, button, a, option,
+  .field-input, .run-btn, .connect-toggle, .site-nav a {
+    cursor: url('soccer-cursor.png') 16 16, auto !important;
+  }
+
+  /* Pitch backdrop: mowed-stripe grass with a soft floodlight glow,
+     built entirely from CSS gradients (no external photo dependency). */
+  body {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(210,255,215,0.65) 0%, transparent 16%, transparent 84%, rgba(210,255,215,0.65) 100%),
+      linear-gradient(rgba(255,255,255,0.42), rgba(255,255,255,0.48)),
+      url('pitch-bg.jpg');
+    background-size: 34px 34px, 34px 34px, 100% 100%, cover, cover;
+    background-position: 0 0, 0 0, center, center, center;
+    background-attachment: scroll, scroll, fixed, fixed, fixed;
+    background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+    padding: 14px 20px 16px;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  header {
+    text-align: center;
+    margin-bottom: 0;
+    background: var(--panel);
+    border-radius: 14px 14px 0 0;
+    padding: 22px 20px 14px;
+    box-shadow: 0 10px 26px rgba(6,40,18,0.16);
+  }
+
+  .title {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 47px;
+    letter-spacing: 2px;
+    color: var(--green);
+    margin: 0;
+  }
+
+  .subtitle {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 15.5px;
+    letter-spacing: 4px;
+    color: var(--text-mute);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 13.5px;
+    letter-spacing: 1.5px;
+    color: var(--green);
+    text-transform: uppercase;
+    margin: 0 0 10px 2px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 300px 300px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  @media (max-width: 980px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 10px 26px rgba(6,40,18,0.18);
+  }
+
+  .field-label {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    display: block;
+    margin: 10px 0 5px;
+  }
+  .field-label:first-child { margin-top: 0; }
+
+  .field-input {
+    width: 100%;
+    height: 40px;
+    background: var(--panel-alt);
+    border: 1.5px solid var(--panel-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 17px;
+    padding: 0 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .field-input[type="text"] { cursor: text; }
+
+  select.field-input {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23147a3b' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"), var(--panel-alt);
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 34px;
+  }
+
+  .field-input:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-soft);
+  }
+
+  .other-club-wrap { display: none; }
+  .other-club-wrap.show { display: block; }
+
+  /* ---------- Player card ---------- */
+  .player-card {
+    margin-top: 14px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0c1f15 0%, #0a2a17 55%, #0d3a20 100%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 8px 20px rgba(6,40,18,0.28);
+  }
+
+  .player-card-photo {
+    position: relative;
+    height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(20,255,110,0.14), transparent 65%);
+  }
+
+  .player-card-photo img {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 6px rgba(70,255,140,0.45));
+  }
+
+  .player-card-info {
+    background: var(--green);
+    padding: 10px 14px 12px;
+    text-align: center;
+  }
+  .pc-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 17.5px;
+    color: #ffffff;
+    line-height: 1.25;
+  }
+  .pc-meta {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 13px;
+    color: rgba(255,255,255,0.82);
+    margin-top: 2px;
+  }
+
+  /* ---------- Results panel ---------- */
+  .results-panel { min-height: 100%; }
+
+  .player-summary {
+    font-family: var(--font-body);
+    font-size: 17.5px;
+    line-height: 1.45;
+    color: var(--text-mute);
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .player-summary strong {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  .gauge-block { margin-bottom: 14px; }
+  .gauge-block:last-child { margin-bottom: 0; }
+
+  .gauge-title {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 17.5px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .gauge-desc {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-mute);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .gauge-row { display: flex; align-items: center; gap: 18px; }
+
+  .gauge-value {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: 49.5px;
+    letter-spacing: 0.5px;
+    min-width: 92px;
+  }
+  .gauge-value span { font-size: 20px; color: var(--text-mute); }
+
+  .run-btn {
+    width: 100%;
+    margin-top: 12px;
+    height: 48px;
+    background: var(--green);
+    color: #ffffff;
+    border: none;
+    border-radius: 9px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.1s, background 0.15s;
+    box-shadow: 0 6px 16px rgba(20,122,59,0.35);
+  }
+  .run-btn:hover { background: var(--green-dim); box-shadow: 0 8px 20px rgba(20,122,59,0.45); }
+  .run-btn:active { transform: scale(0.99); }
+
+  .model-status {
+    margin-top: 10px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-mute);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); flex: none; }
+  .dot.live { background: var(--green); box-shadow: 0 0 4px rgba(20,122,59,0.5); }
+
+  /* ---------- Model connect ---------- */
+  .connect-panel { margin-top: 12px; }
+  .connect-toggle {
+    background: var(--panel-alt);
+    border: 1.5px dashed var(--panel-border);
+    color: var(--text-mute);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 12.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .connect-toggle:hover { border-color: var(--green-dim); color: var(--text); }
+
+  .connect-body { display: none; margin-top: 10px; }
+  .connect-body.open { display: block; }
+
+  .connect-body p {
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: var(--text-mute);
+    line-height: 1.6;
+    margin: 0 0 10px;
+  }
+  .connect-body code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--panel-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--green);
+    font-size: 12.5px;
+  }
+
+  textarea.field-input {
+    height: 120px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    resize: vertical;
+    cursor: text;
+  }
+
+  .connect-apply-row { display: flex; gap: 8px; margin-top: 8px; }
+  .connect-apply-row button {
+    flex: 1;
+    height: 36px;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--panel-border);
+    background: var(--panel);
+    color: var(--text);
+  }
+  .connect-apply-row button.primary {
+    background: var(--green-soft);
+    border-color: var(--green-dim);
+    color: var(--green);
+  }
+  .connect-note { font-size: 12px; margin-top: 8px; color: var(--text-mute); font-family: var(--font-body); }
+
+  /* ---------- Top navigation bar ---------- */
+  .site-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 26px;
+    margin: 0 0 20px;
+    padding: 12px 0 16px;
+    background: var(--panel);
+    border-top: 1px solid var(--panel-border);
+    border-radius: 0 0 14px 14px;
+    box-shadow: 0 10px 26px rgba(6,40,18,0.16);
+  }
+  .site-nav a {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14.5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text);
+    text-decoration: none;
+    padding: 4px 2px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .site-nav a:hover { color: var(--green); }
+  .site-nav a.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  /* ---------- Simple content page (about/how-it-works/etc.) ---------- */
+  .page-content {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 8px 4px 40px;
+    font-family: var(--font-body);
+    color: var(--text);
+    line-height: 1.7;
+    background: var(--panel);
+    border-radius: 16px;
+    box-shadow: 0 10px 26px rgba(6,40,18,0.18);
+    padding: 26px 28px 34px;
+  }
+  .page-content h2 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 24.5px;
+    color: var(--green);
+    margin: 28px 0 10px;
+  }
+  .page-content h2:first-child { margin-top: 0; }
+  .page-content p { font-size: 16px; color: var(--text-mute); margin: 0 0 12px; max-width: 760px; }
+  .page-content ul { margin: 0 0 14px; padding-left: 20px; }
+  .page-content li { font-size: 16px; color: var(--text-mute); margin-bottom: 6px; }
+  .page-content strong { color: var(--text); }
+  .page-content a.inline-link { color: var(--green); font-weight: 600; }
+  .member-list { list-style: none; padding: 0; margin: 0 0 14px; }
+  .member-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--panel-border);
+    font-size: 16px;
+  }
+  .member-list li:last-child { border-bottom: none; }
+  .member-list .member-name { color: var(--text); font-weight: 700; }
+  .member-list .member-role {
+    color: var(--green);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background: var(--green-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .roadmap-item { display: flex; gap: 10px; margin-bottom: 10px; font-size: 16px; align-items: flex-start; }
+  .roadmap-status {
+    flex: none;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    height: fit-content;
+  }
+  .roadmap-status.done { color: #ffffff; background: var(--green); }
+  .roadmap-status.progress { color: var(--amber); border: 1.5px solid var(--amber); }
+  .roadmap-status.next { color: var(--text-mute); border: 1.5px solid var(--panel-border); }
+  .contact-box {
+    background: var(--panel-alt);
+    border: 1.5px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="title">MOVE MAKER</h1>
+    <div class="subtitle">Scope & Limitations</div>
+  </header>
+
+  <nav class="site-nav">
+    <a href="about.html">About</a>
+    <a href="index.html">Tool</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="scope.html" class="active">Scope &amp; Limitations</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+
+  <div class="page-content">
+
+    <h2>What this tool does</h2>
+    <p>Move Maker evaluates the risk of extending or renegotiating a contract for a player <strong>at the club they currently play for</strong>. It looks at proposed wage and contract length against a player's age, injury history, market value, and historical peer data to estimate contribution, retention, and value risk.</p>
+
+    <h2>What this tool does not do</h2>
+    <p>The tool does not evaluate a player for a club they don't currently belong to. This is an intentional guardrail, not a missing feature: allowing any club to be paired with any player would open the door to using the tool for new-signing or acquisition scouting, which is out of scope for this project.</p>
+    <p>If a player's league is outside the tool's coverage, or there's no record of them at the selected club, the tool returns a plain refusal message instead of a dashboard.</p>
+
+    <h2>Why it matters</h2>
+    <p>Keeping the tool scoped to a player's actual, current club keeps the output grounded in real, verifiable contract history rather than speculative what-if scenarios.</p>
+
+  </div>
+</div>
+</body>
+</html>
